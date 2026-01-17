@@ -1,132 +1,77 @@
-# Dijkstra Algorithm Implementation Guide
+# Dijkstra Algorithm Project Implementation
 
-This guide explains the exact code implementation used in your project. It is designed for an algorithms course context, focusing on *how* and *why* the code works, independent of React.
+This document details the algorithmic core of the Multi-Criteria Pathfinding application. The implementation focuses on efficiency and code separation, using **Dijkstra's Algorithm** to calculate optimal paths based on either **distance** or **time**.
 
 ## 1. Core Data Structures
 
-Before understanding the algorithm, we must understand how we store the graph and the helper structures.
+To ensure efficient graph traversal, I utilized specific data structures optimized for sparse graphs.
 
-### The Graph (`Map<string, Edge[]>`)
-We use an **Adjacency List** to represent the graph.
-- **Why?** It is memory efficient for sparse graphs (like road networks) compared to an Adjacency Matrix.
-- **Structure**: A Map where:
-  - **Key**: Node ID (e.g., "A", "B").
-  - **Value**: List of `Edge` objects connected to that node.
+### The Graph Representation (`Adjacency List`)
+I chose an **Adjacency List** over an Adjacency Matrix because most transport networks are sparse (i.e., nodes have few connections relative to the total number of nodes).
+- **Structure**: A `Map<string, Edge[]>` where each key is a Node ID and the value is a list of outgoing edges.
+- **Edge Interface**:
   ```typescript
   interface Edge {
-      to: string;      // The neighbor node
-      distance: number; // Cost 1: Physical availability
-      time: number;     // Cost 2: Travel time
+      to: string;       // The destination node
+      distance: number; // Cost metric 1 (Physical length)
+      time: number;     // Cost metric 2 (Travel time)
   }
   ```
 
 ### The Priority Queue (`MinHeap`)
-Dijkstra's algorithm relies on always exploring the "closest" or "cheapest" node next. A **Min-Heap** is the standard data structure for this.
-- **Purpose**: Efficiently retrieve the node with the smallest current distance/time.
-- **Complexity**:
-  - `push`: **O(log N)**
-  - `pop`: **O(log N)**
-  - (A simple array scan would be O(N), making the total algorithm much slower).
+A standard array would result in `O(N)` lookup time for the closest node, degrading the algorithm to `O(V^2)`. To achieve `O(E log V)` performance, I implemented a binary **Min-Heap**.
 
-#### How the `MinHeap` Class Works
-1.  **Storage**: It uses a simple array `this.heap`. The logic is in how we arrange elements.
-2.  **`push(node, priority)`**:
-    - Add the new node to the *end* of the array.
-    - **`bubbleUp`**: Compare the node with its parent. If it's smaller (higher priority), swap them. Repeat until the heap property is restored.
-3.  **`pop()`**:
-    - Remove the *root* (index 0, the smallest element).
-    - Move the *last* element to the root position.
-    - **`bubbleDown`**: Compare the new root with its children. Swap with the smaller child. Repeat until the heap property is restored.
+- **Function**: It maintains the set of "frontier" nodes, always keeping the node with the smallest tentative distance at the root.
+- **Operations**:
+  - `push(node, priority)`: Inserts a node and bubbles it up to restore heap property (`O(log N)`).
+  - `pop()`: Extracts the minimum element and bubbles down the new root (`O(log N)`).
 
 ---
 
-## 2. The `dijkstra` Function Breakdown
+## 2. Algorithm Execution Flow
 
-The `dijkstra` function is the heart of the pathfinding logic. Here is the step-by-step execution flow:
+The `dijkstra` function encapsulates the core logic, decoupled from the React UI.
 
 ### Phase 1: Initialization
-```typescript
-const dist = new Map<string, number>();         // Stores shortest known distance to each node
-const prev = new Map<string, string | null>();  // Stores the "parent" node to reconstruct path
-const pq = new MinHeap();                       // The generic priority queue
-const visited = new Set<string>();              // Tracks finalized nodes
-```
-1.  **`dist` Map**: acts as our "result table". Initially empty (conceptually infinity).
-2.  **`dist.set(start, 0)`**: We know the distance to the start node is 0.
-3.  **`pq.push(start, 0)`**: Seed the priority queue with the start node.
+We start by initializing our state maps:
+- `dist`: Stores the shortest known distance from the start node to every other node (initialized to infinity/undefined).
+- `prev`: Tracks the path history (predecessor of each node) to reconstruct the route later.
+- `visited`: A `Set` to keep track of finalized nodes.
 
-### Phase 2: The Main Loop (`while (!pq.isEmpty())`)
-This loop runs until we run out of reachable nodes or find our destination.
+### Phase 2: The Search Loop
+The algorithm runs while the Priority Queue is not empty:
+1.  **Extract Min**: We dequeue the node `u` with the smallest known cost.
+2.  **Guard Clause**: If `u` is already in `visited`, we skip it (handling duplicate entries in the heap).
+3.  **Visualization State**: We mark `u` as `visited`.
+4.  **Target Optimization**: If `u` is the destination, we terminate early.
 
-**Step A: Extract Min**
-```typescript
-const { node: u } = pq.pop(); // Get node with smallest known distance
-if (visited.has(u)) continue; // Skip if we already found the optimal path to 'u'
-visited.add(u);               // Mark 'u' as finalized
-```
-*   **Crucial Concept**: Once a node is added to `visited`, we are guaranteed to have found the shortest path to it (assuming non-negative weights). We never process it again.
+### Phase 3: Relaxation (Neighbor Inspection)
+For each neighbor `v` of `u`:
+- We calculate `alt = dist[u] + weight(u, v)`.
+- If `alt` is strictly less than `dist[v]`, we have found a better path.
+- **Update**: We update `dist[v]`, set `prev[v] = u`, and push `v` into the priority queue with the new priority.
 
-**Step B: Target Check**
-```typescript
-if (u === end) break; // Optimization: Stop immediately if we reached the destination
-```
-
-**Step C: Relaxation (Checking Neighbors)**
-We look at every neighbor of the current node `u`.
-```typescript
-const neighbors = graph.get(u);
-for (const edge of neighbors) {
-    if (visited.has(edge.to)) continue; // Don't look back at finalized nodes
-
-    // 1. Calculate potential new total distance
-    // 'mode' determines if we optimize for edges.distance or edges.time
-    const weight = mode === 'distance' ? edge.distance : edge.time;
-    const alt = (dist.get(u) || 0) + weight;
-
-    // 2. Compare and Update
-    if (!dist.has(edge.to) || alt < dist.get(edge.to)!) {
-        dist.set(edge.to, alt); // Found a better path! Update distance
-        prev.set(edge.to, u);   // Record that we came from 'u'
-        pq.push(edge.to, alt);  // Add to queue to explore later
-    }
-}
-```
-*   **Relaxation**: This is the core logical step. "Can I reach neighbor `V` faster by going through `U` than any other way I've seen so far?"
-*   If **Yes**: Update `dist[V]`, set `prev[V] = U`, and push `V` to the Queue.
-
-### Phase 3: Path Reconstruction
-Once the loop finishes, we have the shortest distances, but we need the actual path sequence.
-```typescript
-const path: string[] = [];
-let curr: string | null | undefined = end;
-while (curr) {
-    path.unshift(curr);     // Add to front of list
-    curr = prev.get(curr);  // Backtrack to parent
-}
-```
-*   We start at the `end` node and look up “Who sent me here?” in the `prev` map.
-*   We repeat this until we reach the `start` node (which has no parent).
+### Phase 4: Path Reconstruction
+After reaching the destination, we reconstruct the path by backtracking from the `end` node to the `start` node using the `prev` map.
 
 ---
 
-## 3. Complexity Analysis (For your Mark)
+## 3. Complexity Analysis
 
-When discussing this code, use these complexity terms:
+### Time Complexity: **O(E log V)**
+- **V** = Number of Vertices (Nodes)
+- **E** = Number of Edges
+- We extract each vertex from the Min-Heap once (`log V`). in the worst case, we update the priority for every edge (`E * log V`). This is significantly faster than standard Bellman-Ford or array-based Dijkstra for our dataset size.
 
-- **Time Complexity**: **O(E log V)**
-  - **V**: Number of vertices (nodes).
-  - **E**: Number of edges.
-  - **Explanation**: We visit each node once. For each node, we check all its edges. In the worst case, every edge check causes a `push` to the MinHeap. Pushing takes `O(log V)`. So, total time is roughly `E * log V`.
+### Space Complexity: **O(V + E)**
+- We store the entire graph structure (`V + E`).
+- The `dist` and `prev` maps scale linearly with the number of nodes (`V`).
 
-- **Space Complexity**: **O(V + E)**
-  - We store the graph (**O(V + E)**).
-  - We store `dist`, `prev`, and `visited` maps (**O(V)**).
+---
 
-## 4. React vs Algorithm Separation
-For a non-React developer:
-- **`DijkstraRouter`** (The React Component) is just the **Interface** / **Client**.
-  - It reads the text file (Input).
-  - It holds the `graph` variable in memory (State).
-  - It calls the `dijkstra()` function when you click "Compute".
-  - It draws the HTML based on the `PathResult` object returned.
-- The **`dijkstra`** function and **`MinHeap`** class are **Pure TypeScript/JavaScript**. They do not know about HTML, buttons, or React. They could run in a Node.js server or a command line script without changes.
+## 4. Architecture & Separation of Concerns
+
+The project follows a strict separation between logic and presentation:
+- **Algorithm Layer (`dijkstra` function)**: Pure logic. It accepts a graph and returns a path result. It has no dependency on the UI framework.
+- **Data Layer**: The input parser converts raw text files into the structured `Adjacency List` format.
+- **View Layer (React)**: The component handles user interaction (file upload, node selection) and renders the visual result. It treats the algorithm as a black-box utility.
