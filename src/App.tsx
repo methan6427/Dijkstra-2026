@@ -263,8 +263,13 @@ export default function DijkstraRouter() {
         <div className="app-container">
             <div className="max-width">
                 <div className="app-header">
-                    <h1 className="app-title">🔍 Dijkstra Multi-Criteria Shortest Path</h1>
-                    <p className="app-subtitle">Graph-Based Routing with Distance and Time Optimization</p>
+                    <div className="header-content">
+                        <img src="/logo.png" alt="Logo" className="app-logo" />
+                        <div>
+                            <h1 className="app-title">Dijkstra Multi-Criteria Shortest Path</h1>
+                            <p className="app-subtitle">Graph-Based Routing with Distance and Time Optimization</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="app-grid">
