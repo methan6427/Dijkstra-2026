@@ -1,0 +1,144 @@
+==================
+DIJKSTRA RESULT 
+================
+
+original Distance (line 410):
+{result.distResult.totalDistance.toFixed(2)} km
+
+original Time (line 416):
+{result.distResult.totalTime.toFixed(2)} min
+
+----------------------------------------
+
+
+for (A -> B -> C -> D):
+<p>{result.distResult.path.join(' -> ')}</p>
+
+
+----------------------------------------
+
+
+for (Distance only):
+<p>{result.distResult.totalDistance.toFixed(2)} km</p>
+
+
+----------------------------------------
+
+
+
+for (Distance with label):
+<p>Total Distance: {result.distResult.totalDistance.toFixed(2)} km</p>
+
+
+----------------------------------------
+
+
+for (Path + Distance):
+<p>
+{result.distResult.path.join(' -> ')} <br />
+Distance: {result.distResult.totalDistance.toFixed(2)} km
+</p>
+
+
+----------------------------------------
+
+
+
+for (Time only):
+<p>{result.distResult.totalTime.toFixed(2)} min</p>
+
+
+----------------------------------------
+
+
+
+for (Time with label):
+<p>Total Time: {result.distResult.totalTime.toFixed(2)} min</p>
+
+
+----------------------------------------
+
+
+
+for (Path + Time):
+<p>
+{result.distResult.path.join(' -> ')} <br />
+Time: {result.distResult.totalTime.toFixed(2)} min
+</p>
+
+
+----------------------------------------
+
+
+
+for (Distance + Time):
+<p>
+Distance: {result.distResult.totalDistance.toFixed(2)} km <br />
+Time: {result.distResult.totalTime.toFixed(2)} min
+</p>
+
+
+----------------------------------------
+
+original line (path rendering):
+{result.distResult.path.map((node, idx) => (...) )}
+
+for (Each step on new line):
+{result.distResult.path.map((node, i) => (
+    <p key={i}>{i + 1}. {node}</p>
+))}
+
+
+----------------------------------------
+
+original line (path rendering):
+{result.distResult.path.map((node, idx) => (...) )}
+
+for (Edge by edge):
+{result.distResult.path.map((node, i) => {
+    if (i === result.distResult.path.length - 1) return null;
+    return (
+        <p key={i}>
+            {node} -> {result.distResult.path[i + 1]}
+        </p>
+    );
+})}
+
+
+----------------------------------------
+
+original line (path rendering):
+{result.distResult.path.map((node, idx) => (...) )}
+
+for (Table format):
+<table>
+  <thead>
+    <tr>
+      <th>Step</th>
+      <th>Node</th>
+    </tr>
+  </thead>
+  <tbody>
+    {result.distResult.path.map((node, i) => (
+      <tr key={i}>
+        <td>{i}</td>
+        <td>{node}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+
+----------------------------------------
+
+original line (no path output):
+{/* empty */}
+
+for (No path exists):
+{result.distResult === null && (
+    <p>No path exists</p>
+)}
+
+========================================
+END
+========================================

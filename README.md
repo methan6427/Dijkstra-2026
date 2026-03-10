@@ -75,3 +75,5 @@ The project follows a strict separation between logic and presentation:
 - **Algorithm Layer (`dijkstra` function)**: Pure logic. It accepts a graph and returns a path result. It has no dependency on the UI framework.
 - **Data Layer**: The input parser converts raw text files into the structured `Adjacency List` format.
 - **View Layer (React)**: The component handles user interaction (file upload, node selection) and renders the visual result. It treats the algorithm as a black-box utility.
+
+## this line is only for testing 
